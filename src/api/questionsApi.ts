@@ -151,3 +151,69 @@ export const fetchQuestionById = async (id: number): Promise<Question> => {
     throw error;
   }
 };
+
+/**
+ * Update an existing question by ID
+ * @param id Question ID
+ * @param questionData Updated question data
+ * @returns Promise with updated question details
+ */
+export interface UpdateQuestionPayload {
+  ID: number;
+  CreatedAt: string;
+  UpdatedAt: string;
+  DeletedAt: null | string;
+  examType: string;
+  examYear: string;
+  subject: string;
+  examSection: string;
+  questionType: string;
+  topic: string;
+  questionNumber: number;
+  difficultyLevel: number;
+  preambleUrl: string;
+  questionUrl: string;
+  answers: {
+    optionA: string;
+    optionB: string;
+    optionC: string;
+    optionD: string;
+    optionE: string;
+    correctAnswer: string;
+  };
+  solution: {
+    videoUrl: string;
+    imageUrl: string;
+    markingSchemeUrl: string;
+    teachersNoteUrl: string;
+    solutionHintUrl: string;
+  };
+  relatedTopics: {
+    topics: string[] | null;
+  };
+}
+
+export const updateQuestion = async (id: number, questionData: UpdateQuestionPayload): Promise<Question> => {
+  try {
+    // Get auth token if available
+    const token = localStorage.getItem('auth_token');
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    
+    // Ensure the ID in the URL and the ID in the payload match
+    // The API expects the ID in the payload to match the ID in the URL
+    const payload = {
+      ...questionData,
+      ID: id // Override with the correct ID to ensure consistency
+    };
+    
+    const response = await axios.put<Question>(
+      `https://api.exampalgh.com/api/v1/questions/${id}`,
+      payload,
+      { headers }
+    );
+    return response.data;
+  } catch (error) {
+    console.error(`Error updating question with id ${id}:`, error);
+    throw error;
+  }
+};

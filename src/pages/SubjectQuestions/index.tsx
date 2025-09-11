@@ -425,18 +425,67 @@ export default function SubjectQuestions() {
     };
 
     // Handle saving edited question
-    const handleSaveEdit = (editedQuestion: QuestionData) => {
-      // Update the question in the allQuestions array
-      const updatedQuestions = allQuestions.map((q) =>
-        q.id === editedQuestion.id ? editedQuestion : q
-      );
+    const handleSaveEdit = async (editedQuestion: QuestionData) => {
+      setIsLoading(true);
+      try {
+        // Map UI QuestionData to API UpdateQuestionPayload format
+        const apiPayload = {
+          ID: editedQuestion.id,
+          CreatedAt: new Date().toISOString(), // This will be overwritten by the server
+          UpdatedAt: new Date().toISOString(), // This will be overwritten by the server
+          DeletedAt: null,
+          examType: examType as string,
+          examYear: editedQuestion.year,
+          subject: currentSubject,
+          examSection: editedQuestion.section,
+          questionType: editedQuestion.questionType,
+          topic: editedQuestion.topic,
+          questionNumber: editedQuestion.questionNumber,
+          difficultyLevel: editedQuestion.difficultyLevel,
+          preambleUrl: editedQuestion.preamblePreview || '',
+          questionUrl: editedQuestion.questionPreviews[0] || '',
+          answers: {
+            optionA: editedQuestion.options[0]?.previewUrl || '',
+            optionB: editedQuestion.options[1]?.previewUrl || '',
+            optionC: editedQuestion.options[2]?.previewUrl || '',
+            optionD: editedQuestion.options[3]?.previewUrl || '',
+            optionE: editedQuestion.options[4]?.previewUrl || '',
+            correctAnswer: editedQuestion.correctAnswer.toLowerCase()
+          },
+          solution: {
+            videoUrl: editedQuestion.solutions.videoUrl || '',
+            imageUrl: editedQuestion.solutions.imagePreview || '',
+            markingSchemeUrl: editedQuestion.solutions.markingSchemePreview || '',
+            teachersNoteUrl: editedQuestion.solutions.teachersNotePreview || '',
+            solutionHintUrl: editedQuestion.solutions.solutionHint || ''
+          },
+          relatedTopics: {
+            topics: editedQuestion.tags && editedQuestion.tags.length > 0 ? editedQuestion.tags : null
+          }
+        };
 
-      setAllQuestions(updatedQuestions);
-      setIsEditModalOpen(false);
-      setCurrentQuestion(null);
-      
-      // Show success notification
-      showNotification("Question updated successfully!", "success");
+        // Call the API to update the question using the question ID
+        await import('../../api/questionsApi').then(({ updateQuestion }) => 
+          updateQuestion(editedQuestion.id, apiPayload)
+        );
+
+        // Update the question in the allQuestions array
+        const updatedQuestions = allQuestions.map((q) =>
+          q.id === editedQuestion.id ? editedQuestion : q
+        );
+
+        setAllQuestions(updatedQuestions);
+        setIsEditModalOpen(false);
+        setCurrentQuestion(null);
+        
+        // Show success notification
+        showNotification("Question updated successfully!", "success");
+      } catch (error) {
+        console.error("Error updating question:", error);
+        showNotification(`Error updating question: ${error instanceof Error ? error.message : 'Unknown error'}`, "error");
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     // Handle saving a new question
