@@ -1,0 +1,658 @@
+import { useState, useEffect } from 'react';
+import { 
+  FilteredQuestionsParams, 
+  Question,
+  ExamYear,
+  Subject,
+  Topic,
+  ExamType,
+  api
+} from '../../api';
+
+// Import or define missing functions
+const fetchExamYears = async (): Promise<ExamYear[]> => {
+  try {
+    const response = await api.get('/setups/examyears');
+    console.log('Exam years response:', response);
+    if (response.data && Array.isArray(response.data)) {
+      return response.data;
+    } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
+      return response.data.data;
+    } else {
+      console.error('Unexpected data format for exam years:', response.data);
+      return [];
+    }
+  } catch (error) {
+    console.error('Failed to fetch exam years:', error);
+    return [];
+  }
+};
+
+const fetchSubjects = async (examType: ExamType): Promise<Subject[]> => {
+  try {
+    // Ensure exam type is properly encoded
+    const encodedExamType = encodeURIComponent(examType);
+    const response = await api.get(`/setups/${encodedExamType}/subjects`);
+    if (response.data && Array.isArray(response.data)) {
+      return response.data;
+    } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
+      return response.data.data;
+    } else {
+      console.error(`Unexpected data format for ${examType} subjects:`, response.data);
+      return [];
+    }
+  } catch (error) {
+    console.error(`Failed to fetch ${examType} subjects:`, error);
+    return [];
+  }
+};
+
+const fetchTopics = async (examType: ExamType, subjectName: string): Promise<Topic[]> => {
+  try {
+    // Encode the subject name for URL safety
+    const encodedSubjectName = encodeURIComponent(subjectName);
+    const response = await api.get(`/setups/${examType}/subjects/${encodedSubjectName}/topics`);
+    if (response.data && Array.isArray(response.data)) {
+      return response.data;
+    } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
+      return response.data.data;
+    } else {
+      console.error(`Unexpected data format for ${subjectName} topics:`, response.data);
+      return [];
+    }
+  } catch (error) {
+    console.error(`Failed to fetch topics for ${subjectName}:`, error);
+    return [];
+  }
+};
+
+// Custom implementation for fetching filtered questions using the specified URL
+const fetchFilteredQuestions = async (params: FilteredQuestionsParams): Promise<Question[]> => {
+  try {
+    // Create a safe copy of params to avoid undefined values
+    const safeParams = { ...params };
+    
+    // Use the specific endpoint for questions
+    const queryParams = new URLSearchParams();
+    
+    // Add parameters to the query string if they exist and encode them properly
+    if (safeParams.examtype) queryParams.append('examtype', safeParams.examtype);
+    if (safeParams.examyears) queryParams.append('examyears', safeParams.examyears);
+    if (safeParams.subject) queryParams.append('subject', safeParams.subject);
+    if (safeParams.examSections) queryParams.append('examSections', safeParams.examSections);
+    if (safeParams.questionType) queryParams.append('questionType', safeParams.questionType);
+    if (safeParams.topics) queryParams.append('topics', safeParams.topics);
+    if (safeParams.difficultyLevels) queryParams.append('difficultyLevels', safeParams.difficultyLevels);
+    
+    // Use String() to safely convert numbers to strings
+    if (safeParams.limit !== undefined) queryParams.append('limit', String(safeParams.limit));
+    if (safeParams.page !== undefined) queryParams.append('page', String(safeParams.page));
+    
+    // Create URL string safely
+    let queryString = '';
+    try {
+      queryString = queryParams.toString();
+    } catch (err) {
+      console.error('Error converting query params to string:', err);
+      // Create a manual query string as fallback
+      queryString = Object.entries(safeParams)
+        .filter(([_, value]) => value !== undefined && value !== null && value !== '')
+        .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
+        .join('&');
+    }
+    const url = `/questions/filtered?${queryString}`;
+    console.log('Calling URL:', url);
+    
+    const response = await api.get(url);
+    
+    console.log('Questions API Response:', response);
+    
+    // Handle different possible response formats with null checks
+    if (response && response.data) {
+      if (Array.isArray(response.data)) {
+        return response.data;
+      } else if (response.data.data && Array.isArray(response.data.data)) {
+        return response.data.data;
+      }
+    }
+    
+    console.error('Unexpected data format for filtered questions:', response?.data);
+    return [];
+  } catch (error) {
+    console.error('Failed to fetch filtered questions:', error);
+    throw error;
+  }
+};
+
+/**
+ * Test component for the Questions API
+ */
+const QuestionsApiTest = () => {
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [examYears, setExamYears] = useState<ExamYear[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [topics, setTopics] = useState<Topic[]>([]);
+  
+  const [loading, setLoading] = useState({
+    questions: false,
+    years: false,
+    subjects: false,
+    topics: false
+  });
+  const [error, setError] = useState<string | null>(null);
+  
+  // Default filter parameters
+  const [filters, setFilters] = useState<FilteredQuestionsParams>({
+    examtype: 'WASSCE',
+    examyears: '2020,2021',
+    subject: 'Core Mathematics',
+    examSections: 'Section-A',
+    questionType: 'MCQ',  // Using MCQ to match the test URL
+    limit: 10,
+    page: 1
+  });
+
+  // Handle filter change
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFilters((prev: FilteredQuestionsParams) => ({ ...prev, [name]: value }));
+  };
+
+  // Load available exam years
+  useEffect(() => {
+    const loadExamYears = async () => {
+      try {
+        setLoading(prev => ({ ...prev, years: true }));
+        setError(null);
+        const data = await fetchExamYears();
+        console.log('Fetched exam years:', data);
+        setExamYears(data || []);
+      } catch (err: any) {
+        console.error('Error fetching exam years:', err);
+      } finally {
+        setLoading(prev => ({ ...prev, years: false }));
+      }
+    };
+    
+    loadExamYears();
+  }, []);
+  
+  // Load available subjects when exam type changes
+  useEffect(() => {
+    const loadSubjects = async () => {
+      if (!filters.examtype) return;
+      
+      try {
+        setLoading(prev => ({ ...prev, subjects: true }));
+        setError(null);
+        console.log(`Fetching subjects for ${filters.examtype}`);
+        const data = await fetchSubjects(filters.examtype as ExamType);
+        console.log('Fetched subjects:', data);
+        setSubjects(data || []);
+      } catch (err: any) {
+        console.error(`Error fetching ${filters.examtype} subjects:`, err);
+        if (err.response) {
+          // The request was made and the server responded with an error status code
+          const status = err.response.status;
+          const errorMsg = err.response.data?.message || err.message;
+          setError(`Failed to fetch subjects: Server error (${status}): ${errorMsg}`);
+          console.error('Error response data:', err.response.data);
+        } else if (err.request) {
+          // The request was made but no response was received
+          setError('Failed to fetch subjects: No response from server. Please check your connection.');
+        } else {
+          // Something happened in setting up the request that triggered an error
+          setError(err instanceof Error ? `Failed to fetch subjects: ${err.message}` : 'An unknown error occurred');
+        }
+      } finally {
+        setLoading(prev => ({ ...prev, subjects: false }));
+      }
+    };
+    
+    loadSubjects();
+  }, [filters.examtype]);
+  
+  // Load available topics when subject changes
+  useEffect(() => {
+    const loadTopics = async () => {
+      if (!filters.examtype || !filters.subject) return;
+      
+      try {
+        setLoading(prev => ({ ...prev, topics: true }));
+        setError(null);
+        console.log(`Fetching topics for ${filters.examtype}/${filters.subject}`);
+        const data = await fetchTopics(filters.examtype as ExamType, filters.subject);
+        console.log('Fetched topics:', data);
+        setTopics(data || []);
+      } catch (err: any) {
+        console.error(`Error fetching topics for ${filters.subject}:`, err);
+        if (err.response) {
+          // The request was made and the server responded with an error status code
+          const status = err.response.status;
+          const errorMsg = err.response.data?.message || err.message;
+          setError(`Failed to fetch topics: Server error (${status}): ${errorMsg}`);
+          console.error('Error response data:', err.response.data);
+        } else if (err.request) {
+          // The request was made but no response was received
+          setError('Failed to fetch topics: No response from server. Please check your connection.');
+        } else {
+          // Something happened in setting up the request that triggered an error
+          setError(err instanceof Error ? `Failed to fetch topics: ${err.message}` : 'An unknown error occurred');
+        }
+      } finally {
+        setLoading(prev => ({ ...prev, topics: false }));
+      }
+    };
+    
+    loadTopics();
+  }, [filters.examtype, filters.subject]);
+
+  // Fetch questions with current filters
+  const handleFetchQuestions = async () => {
+    try {
+      setLoading(prev => ({ ...prev, questions: true }));
+      setError(null);
+      
+      // Log the filters being used
+      console.log('Fetching questions with filters:', filters);
+      
+      const data = await fetchFilteredQuestions(filters);
+      console.log('Questions data:', data);
+      setQuestions(data || []);
+    } catch (err: any) {
+      console.error('Error fetching questions:', err);
+      // Add more detailed error information to help debugging
+      if (err.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        setError(`Server error (${err.response.status}): ${err.response.data?.message || err.message}`);
+        console.error('Error response data:', err.response.data);
+      } else if (err.request) {
+        // The request was made but no response was received
+        setError('No response from server. Please check your connection.');
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      }
+    } finally {
+      setLoading(prev => ({ ...prev, questions: false }));
+    }
+  };
+
+  return (
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-6">Questions API Test</h1>
+      
+      {/* Filter Form */}
+      <div className="bg-white p-4 rounded-lg shadow mb-6">
+        <h2 className="text-lg font-semibold mb-4">Filter Parameters</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Exam Type */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Exam Type</label>
+            <select
+              name="examtype"
+              value={filters.examtype || ''}
+              onChange={handleFilterChange}
+              className="w-full p-2 border border-gray-300 rounded"
+            >
+              <option value="WASSCE">WASSCE</option>
+              <option value="BECE">BECE</option>
+            </select>
+          </div>
+          
+          {/* Exam Years */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Exam Years
+              {loading.years && <span className="ml-2 text-xs text-blue-500">(Loading...)</span>}
+            </label>
+            <div className="flex flex-wrap gap-2 border border-gray-300 rounded p-2 max-h-32 overflow-y-auto">
+              {examYears && examYears.length > 0 ? examYears.map(year => (
+                <label key={year.id} className="flex items-center space-x-2 text-sm">
+                  <input 
+                    type="checkbox"
+                    value={year.year}
+                    checked={(filters.examyears || '').split(',').includes(String(year.year || ''))}
+                    onChange={(e) => {
+                      const currentYears = (filters.examyears || '').split(',').filter((y: string) => y.trim());
+                      let newYears: string[];
+                      
+                      if (e.target.checked) {
+                        // Add year if checked
+                        newYears = [...currentYears, String(year.year || '')];
+                      } else {
+                        // Remove year if unchecked
+                        newYears = currentYears.filter((y: string) => y !== String(year.year || ''));
+                      }
+                      
+                      setFilters((prev: FilteredQuestionsParams) => ({ 
+                        ...prev, 
+                        examyears: newYears.join(',') 
+                      }));
+                    }}
+                  />
+                  <span>{year.year}</span>
+                </label>
+              )) : !loading.years ? (
+                <p className="text-sm text-gray-500 p-1">No exam years available</p>
+              ) : null}
+            </div>
+            <div className="mt-1 text-xs text-gray-500">
+              Selected: {filters.examyears || 'None'}
+            </div>
+          </div>
+          
+          {/* Subject */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Subject
+              {loading.subjects && <span className="ml-2 text-xs text-blue-500">(Loading...)</span>}
+            </label>
+            <select
+              name="subject"
+              value={filters.subject || ''}
+              onChange={handleFilterChange}
+              className="w-full p-2 border border-gray-300 rounded"
+            >
+              <option value="">Select a subject</option>
+              {subjects && subjects.map(subject => (
+                <option key={subject.id} value={subject.name}>{subject.name}</option>
+              ))}
+            </select>
+            {(!subjects || subjects.length === 0) && !loading.subjects && (
+              <p className="mt-1 text-xs text-red-500">No subjects available for this exam type</p>
+            )}
+          </div>
+          
+          {/* Exam Sections */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Exam Sections</label>
+            <div className="flex flex-wrap gap-2 border border-gray-300 rounded p-2">
+              {['Section-A', 'Section-B'].map(section => (
+                <label key={section} className="flex items-center space-x-2 text-sm">
+                  <input 
+                    type="checkbox"
+                    value={section}
+                    checked={(filters.examSections || '').split(',').includes(section)}
+                    onChange={(e) => {
+                      const currentSections = (filters.examSections || '').split(',').filter((s: string) => s.trim());
+                      let newSections: string[];
+                      
+                      if (e.target.checked) {
+                        // Add section if checked
+                        newSections = [...currentSections, section];
+                      } else {
+                        // Remove section if unchecked
+                        newSections = currentSections.filter((s: string) => s !== section);
+                      }
+                      
+                      setFilters((prev: FilteredQuestionsParams) => ({ 
+                        ...prev, 
+                        examSections: newSections.join(',') 
+                      }));
+                    }}
+                  />
+                  <span>{section}</span>
+                </label>
+              ))}
+            </div>
+            <div className="mt-1 text-xs text-gray-500">
+              Selected: {filters.examSections || 'None'}
+            </div>
+          </div>
+          
+          {/* Question Type */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Question Type</label>
+            <select
+              name="questionType"
+              value={filters.questionType || ''}
+              onChange={handleFilterChange}
+              className="w-full p-2 border border-gray-300 rounded"
+            >
+              <option value="">All Question Types</option>
+              <option value="MCQ">Multiple Choice (MCQ)</option>
+              <option value="Essay">Essay</option>
+              <option value="Theory">Theory</option>
+            </select>
+          </div>
+          
+          {/* Topics */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Topics
+              {loading.topics && <span className="ml-2 text-xs text-blue-500">(Loading...)</span>}
+            </label>
+            <div className="flex flex-wrap gap-2 border border-gray-300 rounded p-2 max-h-32 overflow-y-auto">
+              {topics && topics.length > 0 ? topics.map(topic => (
+                <label key={topic.id} className="flex items-center space-x-2 text-sm">
+                  <input 
+                    type="checkbox"
+                    value={topic.name}
+                    checked={(filters.topics || '').split(',').includes(topic.name)}
+                    onChange={(e) => {
+                      const currentTopics = (filters.topics || '').split(',').filter((t: string) => t.trim());
+                      let newTopics: string[];
+                      
+                      if (e.target.checked) {
+                        // Add topic if checked
+                        newTopics = [...currentTopics, topic.name];
+                      } else {
+                        // Remove topic if unchecked
+                        newTopics = currentTopics.filter((t: string) => t !== topic.name);
+                      }
+                      
+                      setFilters((prev: FilteredQuestionsParams) => ({ 
+                        ...prev, 
+                        topics: newTopics.join(',') 
+                      }));
+                    }}
+                  />
+                  <span>{topic.name}</span>
+                </label>
+              )) : !loading.topics && filters.subject ? (
+                <p className="text-sm text-gray-500 p-1">No topics available for this subject</p>
+              ) : null}
+              
+              {!filters.subject && !loading.topics && (
+                <p className="text-sm text-gray-500 p-1">Select a subject to see topics</p>
+              )}
+            </div>
+            <div className="mt-1 text-xs text-gray-500">
+              Selected: {filters.topics || 'None'}
+            </div>
+          </div>
+          
+          {/* Difficulty Levels */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Difficulty Levels</label>
+            <div className="flex flex-wrap gap-2 border border-gray-300 rounded p-2">
+              {[1, 2, 3, 4, 5].map(level => (
+                <label key={level} className="flex items-center space-x-2 text-sm">
+                  <input 
+                    type="checkbox"
+                    value={level}
+                    checked={(filters.difficultyLevels || '').split(',').includes(String(level || ''))}
+                    onChange={(e) => {
+                      const currentLevels = (filters.difficultyLevels || '').split(',').filter((l: string) => l.trim());
+                      let newLevels: string[];
+                      
+                      if (e.target.checked) {
+                        // Add level if checked
+                        newLevels = [...currentLevels, String(level || '')];
+                      } else {
+                        // Remove level if unchecked
+                        newLevels = currentLevels.filter((l: string) => l !== String(level || ''));
+                      }
+                      
+                      setFilters((prev: FilteredQuestionsParams) => ({ 
+                        ...prev, 
+                        difficultyLevels: newLevels.join(',') 
+                      }));
+                    }}
+                  />
+                  <span>{level} {level === 1 ? '(Easiest)' : level === 5 ? '(Hardest)' : ''}</span>
+                </label>
+              ))}
+            </div>
+            <div className="mt-1 text-xs text-gray-500">
+              Selected: {filters.difficultyLevels || 'None'}
+            </div>
+          </div>
+          
+          {/* Limit */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Limit</label>
+            <input
+              type="number"
+              name="limit"
+              value={filters.limit || 10}
+              onChange={handleFilterChange}
+              min="1"
+              max="100"
+              className="w-full p-2 border border-gray-300 rounded"
+            />
+          </div>
+          
+          {/* Page */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Page</label>
+            <input
+              type="number"
+              name="page"
+              value={filters.page || 1}
+              onChange={handleFilterChange}
+              min="1"
+              className="w-full p-2 border border-gray-300 rounded"
+            />
+          </div>
+        </div>
+        
+        {/* Submit Button */}
+        <button
+          onClick={handleFetchQuestions}
+          disabled={loading.questions}
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+        >
+          {loading.questions ? 'Loading...' : 'Fetch Questions'}
+        </button>
+      </div>
+      
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+          <span className="block sm:inline">{error}</span>
+        </div>
+      )}
+      
+      {/* Loading indicator for questions */}
+      {loading.questions && (
+        <div className="flex items-center justify-center p-8 bg-white rounded-lg shadow">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
+          <p>Loading questions...</p>
+        </div>
+      )}
+      
+      {/* Questions Display */}
+      {!loading.questions && questions.length > 0 ? (
+        <div className="space-y-6">
+          <h2 className="text-lg font-semibold">Questions ({questions.length})</h2>
+          {questions.map((question) => (
+            <div key={question.ID} className="bg-white p-4 rounded-lg shadow">
+              <div className="flex justify-between mb-4">
+                <span className="text-sm font-medium bg-gray-100 text-gray-800 px-2 py-1 rounded">
+                  {question.examYear || '-'} - {question.subject || '-'}
+                </span>
+                <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                  {question.questionType || '-'} - Q{question.questionNumber || ''}
+                </span>
+              </div>
+              
+              <div className="mb-4">
+                <span className="text-sm font-medium text-gray-700">Topic: </span>
+                <span className="text-sm text-gray-600">{question.topic || 'Not specified'}</span>
+              </div>
+              
+              {/* Question Image */}
+              <div className="mb-4">
+                <h3 className="text-md font-medium mb-2">Question:</h3>
+                {question.questionUrl ? (
+                  <img 
+                    src={question.questionUrl} 
+                    alt={`Question ${question.questionNumber}`}
+                    className="max-w-full h-auto rounded border border-gray-200"
+                  />
+                ) : (
+                  <p className="text-gray-600">No question image available</p>
+                )}
+              </div>
+              
+              {/* Options */}
+              <div className="mb-4">
+                <h3 className="text-md font-medium mb-2">Options:</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {question.answers && Object.entries(question.answers).map(([key, value]) => (
+                    key !== 'correctAnswer' && (
+                      <div key={key} className={`p-2 border rounded ${
+                        question.answers.correctAnswer === key ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
+                      }`}>
+                        <span className="font-medium">{key.replace('option', '')}: </span>
+                        <span>{value}</span>
+                      </div>
+                    )
+                  ))}
+                </div>
+                <p className="mt-2 text-sm font-medium">
+                  Correct Answer: {question.answers?.correctAnswer?.replace('option', '') || 'Not specified'}
+                </p>
+              </div>
+              
+              {/* Solution */}
+              <div>
+                <h3 className="text-md font-medium mb-2">Solution:</h3>
+                {question.solution?.imageUrl ? (
+                  <img 
+                    src={question.solution.imageUrl} 
+                    alt="Solution"
+                    className="max-w-full h-auto rounded border border-gray-200"
+                  />
+                ) : (
+                  <p className="text-gray-600">No solution image available</p>
+                )}
+                
+                {question.solution?.videoUrl && (
+                  <div className="mt-2">
+                    <a 
+                      href={question.solution.videoUrl} 
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline flex items-center"
+                    >
+                      <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 0C4.477 0 0 4.477 0 10C0 15.523 4.477 20 10 20C15.523 20 20 15.523 20 10C20 4.477 15.523 0 10 0ZM8 14.5V5.5L14 10L8 14.5Z"/>
+                      </svg>
+                      Watch solution video
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        !loading.questions && (
+          <div className="bg-gray-50 p-8 text-center rounded-lg">
+            <p className="text-gray-500">
+              {questions.length === 0 && error ? 
+                'Error loading questions. Please check the console for details.' : 
+                'No questions to display. Use the filters above and click "Fetch Questions".'}
+            </p>
+          </div>
+        )
+      )}
+    </div>
+  );
+};
+
+export default QuestionsApiTest;
