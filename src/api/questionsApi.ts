@@ -195,6 +195,9 @@ export interface UpdateQuestionPayload {
 
 export const updateQuestion = async (id: number, questionData: UpdateQuestionPayload): Promise<Question> => {
   try {
+    console.log('updateQuestion called with ID:', id);
+    console.log('questionData received:', questionData);
+    
     // Get auth token if available
     const token = localStorage.getItem('auth_token');
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
@@ -206,8 +209,11 @@ export const updateQuestion = async (id: number, questionData: UpdateQuestionPay
       ID: id // Override with the correct ID to ensure consistency
     };
     
+    console.log('Final payload with ID set:', payload);
+    
+    // Update URL to use the production API endpoint
     const response = await axios.put<Question>(
-      `https://api.exampalgh.com/api/v1/questions/${id}`,
+      `https://trbc396b-8082.uks1.devtunnels.ms/api/v1/questions/${id}`,
       payload,
       { headers }
     );

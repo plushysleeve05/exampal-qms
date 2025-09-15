@@ -1,6 +1,5 @@
 // utils/questionUtils.ts
 import { QuestionData, SolutionsBlock } from '../types';
-import { Question as ApiQuestion } from '../../../api/questionsApi';
 
 // Create empty solution block
 export const createEmptySolutionsBlock = (): SolutionsBlock => ({
@@ -51,7 +50,7 @@ export const createBaseQuestion = (
 });
 
 // Convert API question format to QuestionData format
-export const convertApiQuestionToQuestionData = (apiQuestion: ApiQuestion, index: number): QuestionData => {
+export const convertApiQuestionToQuestionData = (apiQuestion: any, index: number): QuestionData => {
   // Map difficulty level number to string (1=Easy, 2=Hard/Difficult)
   const difficultyMap: Record<number, string> = {
     1: "Easy",
@@ -63,8 +62,18 @@ export const convertApiQuestionToQuestionData = (apiQuestion: ApiQuestion, index
   // Get section from examSection (e.g., "Section-A" -> "Section A")
   const section = apiQuestion.examSection?.replace('-', ' ') || "";
   
+  // Use the uppercase ID field from API response
+  const questionId = apiQuestion.ID !== undefined ? apiQuestion.ID : (apiQuestion.id || index);
+  
+  // Add console log to help debug ID issues
+  console.log('Converting API question to QuestionData:', {
+    apiID: apiQuestion.ID,
+    apiId: apiQuestion.id, 
+    usingId: questionId
+  });
+  
   return {
-    id: apiQuestion.id || index,
+    id: questionId,
     year: apiQuestion.examYear || "",
     section: section,
     questionType: apiQuestion.questionType || "",
@@ -85,7 +94,7 @@ export const convertApiQuestionToQuestionData = (apiQuestion: ApiQuestion, index
       { label: "D", imageFile: null, previewUrl: apiQuestion.answers?.optionD || null },
       { label: "E", imageFile: null, previewUrl: apiQuestion.answers?.optionE || null }
     ],
-    correctAnswer: (apiQuestion.answers?.correctAnswer || "A") as "A" | "B" | "C" | "D" | "E",
+    correctAnswer: (apiQuestion.answers?.correctAnswer || "A").toUpperCase() as "A" | "B" | "C" | "D" | "E",
     tags: apiQuestion.relatedTopics?.topics || [],
     solutions: {
       imageFile: null,

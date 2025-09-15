@@ -64,6 +64,9 @@ export default function ViewQuestionModal({ isOpen, onClose, onEdit, question, e
   const [activeTab, setActiveTab] = useState<'details' | 'solutions'>('details');
 
   if (!isOpen || !question) return null;
+  
+  // Determine if this is an essay-type question (either "Essay" type or "Section B")
+  const isEssayQuestion = question.questionType === "Essay" || question.section === "Section B";
 
   // Function to get the appropriate color classes for a difficulty badge
   const getDifficultyColorClasses = (difficulty: string) => {
@@ -199,8 +202,6 @@ export default function ViewQuestionModal({ isOpen, onClose, onEdit, question, e
                   )}
                   
                   <div className="prose dark:prose-invert max-w-none">
-                    
-                    
                     {/* Display question images if available */}
                     {question.questionPreviews?.filter(Boolean).map((preview, i) => (
                       <img key={i} src={preview || ''} alt={`Question ${i+1}`} className="my-4 max-w-full" />
@@ -209,13 +210,28 @@ export default function ViewQuestionModal({ isOpen, onClose, onEdit, question, e
                 </div>
               </div>
 
-              {/* Options */}
-              <div className="mb-8">
-                <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Options</div>
-                <div className="space-y-1">
-                  {renderOptions()}
+              {/* Options - only show for MCQ questions */}
+              {!isEssayQuestion && (
+                <div className="mb-8">
+                  <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Options</div>
+                  <div className="space-y-1">
+                    {renderOptions()}
+                  </div>
                 </div>
-              </div>
+              )}
+              
+              {/* Essay question specific content */}
+              {isEssayQuestion && (
+                <div className="mb-8">
+                  <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Essay Question</div>
+                  <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <p className="text-gray-700 dark:text-gray-300">
+                      This is an essay question that requires a written response. Students are expected to provide 
+                      a comprehensive answer with proper structure and reasoning.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Question metadata */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -259,10 +275,23 @@ export default function ViewQuestionModal({ isOpen, onClose, onEdit, question, e
                         </span>
                       </div>
 
-                      <div className="text-gray-600 dark:text-gray-400">Correct Answer:</div>
-                      <div className="font-medium text-green-700 dark:text-green-400">
-                        {question.correctAnswer}
-                      </div>
+                      {/* Only show correct answer for MCQ questions */}
+                      {!isEssayQuestion && (
+                        <>
+                          <div className="text-gray-600 dark:text-gray-400">Correct Answer:</div>
+                          <div className="font-medium text-green-700 dark:text-green-400">
+                            {question.correctAnswer}
+                          </div>
+                        </>
+                      )}
+                      
+                      {/* Essay-specific properties */}
+                      {isEssayQuestion && (
+                        <>
+                          <div className="text-gray-600 dark:text-gray-400">Format:</div>
+                          <div className="font-medium text-gray-900 dark:text-white">Extended Response</div>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -294,12 +323,16 @@ export default function ViewQuestionModal({ isOpen, onClose, onEdit, question, e
           {activeTab === 'solutions' && (
             <div className="px-6 py-6">
               <div className="mb-6">
-                <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Solution Hint</div>
+                <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                  {isEssayQuestion ? "Answer Guidelines" : "Solution Hint"}
+                </div>
                 <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                   {question.solutions.solutionHint ? (
                     <p className="text-gray-800 dark:text-gray-200">{question.solutions.solutionHint}</p>
                   ) : (
-                    <p className="text-gray-500 dark:text-gray-400 italic">No solution hint available</p>
+                    <p className="text-gray-500 dark:text-gray-400 italic">
+                      {isEssayQuestion ? "No answer guidelines available" : "No solution hint available"}
+                    </p>
                   )}
                 </div>
               </div>
@@ -315,12 +348,16 @@ export default function ViewQuestionModal({ isOpen, onClose, onEdit, question, e
               
               {question.solutions.markingSchemePreview && (
                 <div className="mb-6">
-                  <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Marking Scheme</div>
+                  <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    {isEssayQuestion ? "Marking Criteria" : "Marking Scheme"}
+                  </div>
                   <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                     <img src={question.solutions.markingSchemePreview} alt="Marking Scheme" className="max-w-full" />
                   </div>
                 </div>
               )}
+              
+              
               
               {question.solutions.videoUrl && (
                 <div className="mb-6">

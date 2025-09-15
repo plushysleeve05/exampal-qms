@@ -3,6 +3,7 @@ export * from './examYearsApi';
 export * from './subjectsApi';
 export * from './topicsApi';
 export * from './questionsApi';
+export * from './questionCountApi';
 export * from './types';
 
 // Export default API instance

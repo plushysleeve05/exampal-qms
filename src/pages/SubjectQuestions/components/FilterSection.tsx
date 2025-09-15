@@ -4,12 +4,12 @@ interface FilterSectionProps {
   years: string[];
   topics: string[];
   difficulties: string[];
+  questionTypes: string[];
   sections: string[];
-  
   pendingYears: string[];
   setPendingYears: React.Dispatch<React.SetStateAction<string[]>>;
-  pendingSections: string[];
-  setPendingSections: React.Dispatch<React.SetStateAction<string[]>>;
+  pendingQuestionTypes: string[];
+  setPendingQuestionTypes: (types: string[] | ((prevTypes: string[]) => string[])) => void;
   pendingTopics: string[];
   setPendingTopics: React.Dispatch<React.SetStateAction<string[]>>;
   pendingDifficulties: string[];
@@ -32,11 +32,11 @@ const FilterSection: React.FC<FilterSectionProps> = ({
   years,
   topics,
   difficulties,
-  sections,
+  questionTypes,
   pendingYears,
   setPendingYears,
-  pendingSections,
-  setPendingSections,
+  pendingQuestionTypes,
+  setPendingQuestionTypes,
   pendingTopics,
   setPendingTopics,
   pendingDifficulties,
@@ -56,11 +56,11 @@ const FilterSection: React.FC<FilterSectionProps> = ({
   
   // References to dropdown elements
   const yearDropdownRef = useRef<HTMLDivElement>(null);
-  const sectionDropdownRef = useRef<HTMLDivElement>(null);
+  const questionTypeDropdownRef = useRef<HTMLDivElement>(null);
   const topicDropdownRef = useRef<HTMLDivElement>(null);
   const difficultyDropdownRef = useRef<HTMLDivElement>(null);
   const yearButtonRef = useRef<HTMLButtonElement>(null);
-  const sectionButtonRef = useRef<HTMLButtonElement>(null);
+  const questionTypeButtonRef = useRef<HTMLButtonElement>(null);
   const topicButtonRef = useRef<HTMLButtonElement>(null);
   const difficultyButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -108,9 +108,9 @@ const FilterSection: React.FC<FilterSectionProps> = ({
         (activeDropdown === 'year-dropdown' && 
           !yearDropdownRef.current?.contains(event.target as Node) && 
           !yearButtonRef.current?.contains(event.target as Node)) ||
-        (activeDropdown === 'section-dropdown' && 
-          !sectionDropdownRef.current?.contains(event.target as Node) && 
-          !sectionButtonRef.current?.contains(event.target as Node)) ||
+        (activeDropdown === 'question-type-dropdown' && 
+          !questionTypeDropdownRef.current?.contains(event.target as Node) && 
+          !questionTypeButtonRef.current?.contains(event.target as Node)) ||
         (activeDropdown === 'topic-dropdown' && 
           !topicDropdownRef.current?.contains(event.target as Node) && 
           !topicButtonRef.current?.contains(event.target as Node)) ||
@@ -135,7 +135,7 @@ const FilterSection: React.FC<FilterSectionProps> = ({
         const activeElement = document.activeElement;
         const dropdownRef = 
           activeDropdown === 'year-dropdown' ? yearDropdownRef.current :
-          activeDropdown === 'section-dropdown' ? sectionDropdownRef.current :
+          activeDropdown === 'question-type-dropdown' ? questionTypeDropdownRef.current :
           activeDropdown === 'topic-dropdown' ? topicDropdownRef.current :
           activeDropdown === 'difficulty-dropdown' ? difficultyDropdownRef.current : null;
         
@@ -161,8 +161,8 @@ const FilterSection: React.FC<FilterSectionProps> = ({
     // Set focus to the dropdown button when it opens
     if (activeDropdown === 'year-dropdown' && yearButtonRef.current) {
       yearButtonRef.current.focus();
-    } else if (activeDropdown === 'section-dropdown' && sectionButtonRef.current) {
-      sectionButtonRef.current.focus();
+    } else if (activeDropdown === 'question-type-dropdown' && questionTypeButtonRef.current) {
+      questionTypeButtonRef.current.focus();
     } else if (activeDropdown === 'topic-dropdown' && topicButtonRef.current) {
       topicButtonRef.current.focus();
     } else if (activeDropdown === 'difficulty-dropdown' && difficultyButtonRef.current) {
@@ -251,10 +251,18 @@ const FilterSection: React.FC<FilterSectionProps> = ({
                     <input
                       type="checkbox"
                       checked={pendingYears.includes(year)}
-                      onChange={() => {}} // Handled by parent onClick
+                      onChange={() => togglePendingSelection(year, pendingYears, setPendingYears)}
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     />
-                    <span className="ml-2 text-gray-700 dark:text-gray-200">{year}</span>
+                    <span 
+                      className="ml-2 text-gray-700 dark:text-gray-200 flex-grow"
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent double firing with parent onClick
+                        togglePendingSelection(year, pendingYears, setPendingYears);
+                      }}
+                    >
+                      {year}
+                    </span>
                   </label>
                 </div>
               ))}
@@ -262,30 +270,30 @@ const FilterSection: React.FC<FilterSectionProps> = ({
           </div>
         </div>
 
-        {/* Section filter dropdown */}
+        {/* Question Type filter dropdown */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Section
+            Question Type
           </label>
           <div className="relative">
             <button
-              id="section-dropdown-button"
-              ref={sectionButtonRef}
-              onClick={() => toggleDropdown('section-dropdown')}
-              onKeyDown={(e) => handleKeyDown(e, 'section-dropdown')}
-              className={`w-full bg-white dark:bg-gray-700 border ${activeDropdown === 'section-dropdown' ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-gray-300 dark:border-gray-600'} rounded-md py-2 px-3 text-left shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-colors duration-200`}
-              aria-expanded={activeDropdown === 'section-dropdown'}
+              id="question-type-dropdown-button"
+              ref={questionTypeButtonRef}
+              onClick={() => toggleDropdown('question-type-dropdown')}
+              onKeyDown={(e) => handleKeyDown(e, 'question-type-dropdown')}
+              className={`w-full bg-white dark:bg-gray-700 border ${activeDropdown === 'question-type-dropdown' ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-gray-300 dark:border-gray-600'} rounded-md py-2 px-3 text-left shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-colors duration-200`}
+              aria-expanded={activeDropdown === 'question-type-dropdown'}
               aria-haspopup="true"
               tabIndex={0}
             >
               <span className="block truncate">
-                {pendingSections.length > 0 
-                  ? `${pendingSections.length} section${pendingSections.length > 1 ? 's' : ''} selected` 
-                  : 'Select sections'}
+                {pendingQuestionTypes.length > 0 
+                  ? `${pendingQuestionTypes.length} type${pendingQuestionTypes.length > 1 ? 's' : ''} selected` 
+                  : 'Select question types'}
               </span>
               <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                 <svg 
-                  className={`h-5 w-5 ${activeDropdown === 'section-dropdown' ? 'text-blue-500' : 'text-gray-400'} transition-transform duration-200 ${activeDropdown === 'section-dropdown' ? 'transform rotate-180' : ''}`} 
+                  className={`h-5 w-5 ${activeDropdown === 'question-type-dropdown' ? 'text-blue-500' : 'text-gray-400'} transition-transform duration-200 ${activeDropdown === 'question-type-dropdown' ? 'transform rotate-180' : ''}`} 
                   xmlns="http://www.w3.org/2000/svg" 
                   viewBox="0 0 20 20" 
                   fill="currentColor" 
@@ -296,44 +304,58 @@ const FilterSection: React.FC<FilterSectionProps> = ({
               </span>
             </button>
             <div
-              id="section-dropdown"
+              id="question-type-dropdown"
               className={`absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md max-h-60 overflow-auto py-1 text-sm transition-all duration-200 ease-in-out transform origin-top ${
-                activeDropdown === 'section-dropdown' 
+                activeDropdown === 'question-type-dropdown' 
                   ? 'opacity-100 scale-100' 
                   : 'opacity-0 scale-95 invisible pointer-events-none'
               }`}
-              ref={sectionDropdownRef}
+              ref={questionTypeDropdownRef}
             >
               <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                 <div className="flex justify-between">
                   <button 
                     className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                    onClick={() => setPendingSections([...sections])}
+                    onClick={() => {
+                      // Only select the first question type when "Select All" is clicked
+                      // since we're using single selection in the parent component
+                      if (questionTypes.length > 0) {
+                        setPendingQuestionTypes([questionTypes[0]]);
+                      }
+                    }}
                   >
-                    Select All
+                    Select First
                   </button>
                   <button 
                     className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                    onClick={() => setPendingSections([])}
+                    onClick={() => setPendingQuestionTypes([])}
                   >
                     Clear All
                   </button>
                 </div>
               </div>
-              {sections.map((section, index) => (
+              {questionTypes.map((questionType, index) => (
                 <div 
-                  key={`${section}-${index}`} 
+                  key={`${questionType}-${index}`} 
                   className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer"
-                  onClick={() => togglePendingSelection(section, pendingSections, setPendingSections)}
+                  onClick={() => togglePendingSelection(questionType, pendingQuestionTypes, setPendingQuestionTypes)}
                 >
                   <label className="inline-flex items-center w-full cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={pendingSections.includes(section)}
-                      onChange={() => {}} // Handled by parent onClick
+                      checked={pendingQuestionTypes.includes(questionType)}
+                      onChange={() => togglePendingSelection(questionType, pendingQuestionTypes, setPendingQuestionTypes)}
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     />
-                    <span className="ml-2 text-gray-700 dark:text-gray-200">{section}</span>
+                    <span 
+                      className="ml-2 text-gray-700 dark:text-gray-200 flex-grow"
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent double firing with parent onClick
+                        togglePendingSelection(questionType, pendingQuestionTypes, setPendingQuestionTypes);
+                      }}
+                    >
+                      {questionType}
+                    </span>
                   </label>
                 </div>
               ))}
@@ -409,10 +431,18 @@ const FilterSection: React.FC<FilterSectionProps> = ({
                     <input
                       type="checkbox"
                       checked={pendingTopics.includes(topic)}
-                      onChange={() => {}} // Handled by parent onClick
+                      onChange={() => togglePendingSelection(topic, pendingTopics, setPendingTopics)}
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     />
-                    <span className="ml-2 text-gray-700 dark:text-gray-200">{topic}</span>
+                    <span 
+                      className="ml-2 text-gray-700 dark:text-gray-200 flex-grow"
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent double firing with parent onClick
+                        togglePendingSelection(topic, pendingTopics, setPendingTopics);
+                      }}
+                    >
+                      {topic}
+                    </span>
                   </label>
                 </div>
               ))}
@@ -488,10 +518,18 @@ const FilterSection: React.FC<FilterSectionProps> = ({
                     <input
                       type="checkbox"
                       checked={pendingDifficulties.includes(difficulty)}
-                      onChange={() => {}} // Handled by parent onClick
+                      onChange={() => togglePendingSelection(difficulty, pendingDifficulties, setPendingDifficulties)}
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     />
-                    <span className="ml-2 text-gray-700 dark:text-gray-200">{difficulty}</span>
+                    <span 
+                      className="ml-2 text-gray-700 dark:text-gray-200 flex-grow"
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent double firing with parent onClick
+                        togglePendingSelection(difficulty, pendingDifficulties, setPendingDifficulties);
+                      }}
+                    >
+                      {difficulty}
+                    </span>
                   </label>
                 </div>
               ))}
@@ -563,6 +601,11 @@ const FilterSection: React.FC<FilterSectionProps> = ({
         {selectedDifficulties.length > 0 && (
           <div className="text-xs bg-yellow-50 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800/30 px-2 py-1 rounded-full">
             Difficulties: {selectedDifficulties.join(", ")}
+          </div>
+        )}
+        {pendingQuestionTypes.length > 0 && (
+          <div className="text-xs bg-purple-50 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-200 dark:border-purple-800/30 px-2 py-1 rounded-full">
+            Question Types: {pendingQuestionTypes.join(", ")}
           </div>
         )}
       </div>

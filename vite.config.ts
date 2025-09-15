@@ -15,4 +15,11 @@ export default defineConfig({
       },
     }),
   ],
+  server: {
+    // In development, Vite handles SPA routing automatically
+  },
+  build: {
+    // For production builds
+    outDir: 'dist',
+  },
 });
