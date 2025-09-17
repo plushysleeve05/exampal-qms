@@ -1,5 +1,5 @@
 // EditQuestionModal.tsx
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import ImagePicker from "../common/ImagePicker";
 import Lightbox from "../common/Lightbox";
 import CustomSelect from "../form/CustomSelect";
@@ -253,11 +253,6 @@ useEffect(() => {
     });
   };
   
-  // Open lightbox
-  const openLightbox = (src: string, alt: string = "Preview", isPdf: boolean = false) => {
-    setLightbox({open: true, src, alt, isPdf});
-  };
-
   // tags
   const addTag = () => {
     const t = tagInput.trim();

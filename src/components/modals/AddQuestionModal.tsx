@@ -1,9 +1,8 @@
 // AddQuestionModal.tsx
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router";
 import ImagePicker from "../common/ImagePicker";
 import Lightbox from "../common/Lightbox";
-import CustomSelect from "../form/CustomSelect";
 
 interface AddQuestionModalProps {
   isOpen: boolean;

@@ -12,8 +12,6 @@ import {
   TableIcon,
   UserCircleIcon,
   PieChartIcon,
-  GroupIcon,
-  ChatIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";

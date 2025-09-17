@@ -1,5 +1,6 @@
 // components/FilterSection.tsx
-import React, { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 interface FilterSectionProps {
   years: string[];
   topics: string[];
@@ -7,13 +8,13 @@ interface FilterSectionProps {
   questionTypes: string[];
   sections: string[];
   pendingYears: string[];
-  setPendingYears: React.Dispatch<React.SetStateAction<string[]>>;
+  setPendingYears: Dispatch<SetStateAction<string[]>>;
   pendingQuestionTypes: string[];
   setPendingQuestionTypes: (types: string[] | ((prevTypes: string[]) => string[])) => void;
   pendingTopics: string[];
-  setPendingTopics: React.Dispatch<React.SetStateAction<string[]>>;
+  setPendingTopics: Dispatch<SetStateAction<string[]>>;
   pendingDifficulties: string[];
-  setPendingDifficulties: React.Dispatch<React.SetStateAction<string[]>>;
+  setPendingDifficulties: Dispatch<SetStateAction<string[]>>;
   
   selectedYears: string[];
   selectedTopics: string[];

@@ -1,4 +1,3 @@
-import React from 'react';
 import PageBreadCrumb from '../../components/common/PageBreadCrumb';
 
 const UserRoles: React.FC = () => {

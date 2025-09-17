@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
-import { fetchSubjects, fetchTopics, Subject, Topic, ExamType } from '../../api';
+import { fetchSubjects, fetchTopics, ExamType } from '../../api';
 
 /**
  * Example component demonstrating how to use the API in a component
  */
 const SubjectQuestionsAPIExample = ({ examType = 'BECE' }: { examType?: ExamType }) => {
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
-  const [topics, setTopics] = useState<Topic[]>([]);
+  const [subjects, setSubjects] = useState<string[]>([]);
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+  const [topics, setTopics] = useState<string[]>([]);
   const [loading, setLoading] = useState({
     subjects: false,
     topics: false
@@ -42,7 +42,7 @@ const SubjectQuestionsAPIExample = ({ examType = 'BECE' }: { examType?: ExamType
     const loadTopics = async () => {
       try {
         setLoading(prev => ({ ...prev, topics: true }));
-        const data = await fetchTopics(examType, selectedSubject.name);
+        const data = await fetchTopics(examType, selectedSubject);
         setTopics(data);
       } catch (err) {
         setError(`Failed to load topics: ${err instanceof Error ? err.message : 'Unknown error'}`);
@@ -56,8 +56,7 @@ const SubjectQuestionsAPIExample = ({ examType = 'BECE' }: { examType?: ExamType
 
   // Handle subject change
   const handleSubjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const subjectId = parseInt(e.target.value);
-    const subject = subjects.find(s => s.id === subjectId) || null;
+    const subject = e.target.value;
     setSelectedSubject(subject);
   };
 
@@ -73,7 +72,7 @@ const SubjectQuestionsAPIExample = ({ examType = 'BECE' }: { examType?: ExamType
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700">Select Subject:</label>
         <select
-          value={selectedSubject?.id || ''}
+          value={selectedSubject || ''}
           onChange={handleSubjectChange}
           disabled={loading.subjects}
           className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
@@ -82,8 +81,8 @@ const SubjectQuestionsAPIExample = ({ examType = 'BECE' }: { examType?: ExamType
             <option>Loading subjects...</option>
           ) : (
             subjects.map(subject => (
-              <option key={subject.id} value={subject.id}>
-                {subject.name}
+              <option key={subject} value={subject}>
+                {subject}
               </option>
             ))
           )}
@@ -102,8 +101,8 @@ const SubjectQuestionsAPIExample = ({ examType = 'BECE' }: { examType?: ExamType
           </div>
         ) : topics.length > 0 ? (
           <ul className="list-disc pl-5 space-y-1">
-            {topics.map(topic => (
-              <li key={topic.id} className="text-gray-700">{topic.name}</li>
+            {topics.map((topic, index) => (
+              <li key={index} className="text-gray-700">{topic}</li>
             ))}
           </ul>
         ) : (

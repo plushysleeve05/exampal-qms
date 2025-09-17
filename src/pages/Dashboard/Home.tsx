@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
-import { Modal } from "../../components/ui/modal";
-import { useModal } from "../../hooks/useModal";
 import { useSubjects } from "./hooks/useSubjects";
 
 
