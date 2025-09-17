@@ -12,7 +12,7 @@ import { normalizeSubjectName } from '../../utils/subjectUtils';
 
 import { useQuestionsApi } from './hooks/useQuestionsApi';
 import { useQuestionFilters } from './hooks/useQuestionFilters';
-import { usePagination, PaginationData } from './hooks/usePagination';
+import { usePagination } from './hooks/usePagination';
 import { useNotification } from './hooks/useNotification';
 import { QuestionData, ConfirmationModalProps } from './types';
 
@@ -57,29 +57,19 @@ export default function SubjectQuestions() {
     setPaginatedQuestions([]);
   };
 
-  const endFetchUI = () => setIsLoading(false);
-
 
   const {
     selectedYears,
-    setSelectedYears,
     selectedSections,
-    setSelectedSections,
     selectedTopics,
-    setSelectedTopics,
     selectedDifficulties,
-    setSelectedDifficulties,
     selectedQuestionType,
-    setSelectedQuestionType,
     searchQuery,
     setSearchQuery,
-    questionCount,
-    setQuestionCount,
 
     pendingYears,
     setPendingYears,
     pendingSections,
-    setPendingSections,
     pendingTopics,
     setPendingTopics,
     pendingDifficulties,
@@ -87,10 +77,6 @@ export default function SubjectQuestions() {
     pendingQuestionType,
     setPendingQuestionType,
 
-    filteredQuestions,
-    effectiveFilteredQuestions,
-
-    toggleSelection,
     togglePendingSelection,
     applyFilters: applyFiltersFn,
     clearPendingFilters,
@@ -116,8 +102,6 @@ export default function SubjectQuestions() {
     setPageSize,
     updateFromBackend,
     resetPagination,
-    indexOfFirstItem,
-    indexOfLastItem,
     hasNext,
     hasPrev
   } = usePagination({
@@ -1099,7 +1083,6 @@ export default function SubjectQuestions() {
               handleView={handleView}
               handleDeleteQuestion={handleDeleteQuestion}
               isLoading={isLoading}
-              initialDataLoaded={initialDataLoaded}
             />
 
             {/* Pagination Component */}
@@ -1124,8 +1107,6 @@ export default function SubjectQuestions() {
                     setPageSize(newPageSize);
                     fetchPageData(0); // Reset to first page when changing page size
                   }}
-                  indexOfFirstItem={indexOfFirstItem}
-                  indexOfLastItem={Math.min(indexOfLastItem, pagination.totalItems || paginatedQuestions.length)}
                   hasNext={hasNext || (paginatedQuestions.length === pagination.pageSize)}
                   hasPrev={hasPrev}
                 />

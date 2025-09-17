@@ -83,7 +83,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                     } ${selected ? 'bg-blue-50 dark:bg-blue-800/30' : ''}`
                   }
                 >
-                  {({ selected, active }) => (
+                  {({ selected }) => (
                     <>
                       <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>
                         {option.label}

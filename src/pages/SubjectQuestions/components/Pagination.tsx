@@ -10,10 +10,6 @@ interface PaginationProps {
   onPageChange: (pageNumber: number) => void;
   onPageSizeChange: (pageSize: number) => void;
   
-  // Display values
-  indexOfFirstItem: number;
-  indexOfLastItem: number;
-  
   // Navigation helpers
   hasNext?: boolean;
   hasPrev?: boolean;
@@ -23,8 +19,6 @@ const Pagination: React.FC<PaginationProps> = ({
   pagination: { currentPage, pageSize, totalItems, totalPages },
   onPageChange,
   onPageSizeChange,
-  indexOfFirstItem,
-  indexOfLastItem,
   // If not provided, calculate these based on currentPage and totalPages
   hasNext = currentPage + 1 < totalPages,
   hasPrev = currentPage > 0

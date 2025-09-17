@@ -16,7 +16,6 @@ interface QuestionsTableProps {
   handleView: (question: QuestionData) => void;
   handleDeleteQuestion: (question: QuestionData) => void;
   isLoading: boolean;
-  initialDataLoaded?: boolean;
 }
 
 // Helper function to check if a question has solution materials
@@ -40,8 +39,7 @@ const QuestionsTable: React.FC<QuestionsTableProps> = ({
   handleEdit,
   handleView,
   handleDeleteQuestion,
-  isLoading,
-  initialDataLoaded
+  isLoading
 }) => {
   return (
     <div className="overflow-x-auto relative">
