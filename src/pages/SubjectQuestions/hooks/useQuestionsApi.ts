@@ -7,6 +7,7 @@ import { fetchTopics } from '../../../api/topicsApi';
 import { fetchFilteredQuestions, QuestionFilterParams } from '../../../api/questionsApi';
 import { QuestionData } from '../types';
 import { convertApiQuestionToQuestionData } from '../utils/questionUtils';
+import { normalizeSubjectName } from '../../../utils/subjectUtils';
 
 interface UseQuestionsApiProps {
   examType: ExamType | string | undefined;
@@ -54,7 +55,9 @@ export const useQuestionsApi = ({ examType, subject }: UseQuestionsApiProps): Us
       
       // Fetch topics for the current subject
       if (examType && subject) {
-        const topicsData = await fetchTopics(examType as ExamType, subject);
+        // Normalize subject name for API calls to ensure consistent capitalization
+        const normalizedSubject = normalizeSubjectName(subject);
+        const topicsData = await fetchTopics(examType as ExamType, normalizedSubject);
         // Filter out duplicate topics - convert to Set and back to array
         const uniqueTopics = [...new Set(topicsData)];
         setTopics(uniqueTopics);
@@ -88,6 +91,11 @@ export const useQuestionsApi = ({ examType, subject }: UseQuestionsApiProps): Us
         page: currentPage,
         pageSize: itemsPerPage
       };
+      
+      // Normalize subject name in params before API call
+      if (params.subject) {
+        params.subject = normalizeSubjectName(params.subject);
+      }
       
       // Fetch questions from API
       const response = await fetchFilteredQuestions(params);

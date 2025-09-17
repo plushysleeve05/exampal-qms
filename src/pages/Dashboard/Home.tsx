@@ -3,66 +3,16 @@ import { Link } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import { Modal } from "../../components/ui/modal";
 import { useModal } from "../../hooks/useModal";
+import { useSubjects } from "./hooks/useSubjects";
 
-// BECE subjects
-const beceSubjects = [
-  "English Language",
-  "Mathematics",
-  "Integrated Science",
-  "Social Studies",
-  "Religious And Moral Education",
-  "Home Economics",
-  "Pre Technical Skills",
-  "Akuapem Twi",
-  "Asante Twi",
-  "Ga",
-  "French",
-  "Career Technology",
-  "Computing",
-  "Creative Arts And Designs"
-];
-
-// WASSCE subjects
-const wassceSubjects = [
-  "English Language",
-  "Core Mathematics",
-  "Elective Mathematics",
-  "Biology",
-  "Physics",
-  "Economics",
-  "Social Studies",
-  "Chemistry",
-  "Geography",
-  "Integrated Science",
-  "Elective ICT",
-  "Cost Accounting",
-  "Food and Nutrition",
-  "French",
-  "General Science",
-  "Additional Mathematics"
-];
-
-// Interfaces removed
-
-// Metrics and modal sample data removed
-
-// Recent activity
-const recentActivity = [
-  { action: "Created new question", subject: "Mathematics", examType: "BECE", time: "2 minutes ago", user: "John Doe" },
-  { action: "Updated question bank", subject: "Physics", examType: "WASSCE", time: "20 minutes ago", user: "Sarah Parker" },
-  { action: "Imported question set", subject: "English Language", examType: "BECE", time: "1 hour ago", user: "Michael Chen" },
-  { action: "Approved questions", subject: "Chemistry", examType: "WASSCE", time: "3 hours ago", user: "Jane Smith" },
-];
 
 export default function Home() {
   const [beceExpanded, setBeceExpanded] = useState(false);
   const [wassceExpanded, setWassceExpanded] = useState(false);
   
-  // Modal states
-  const activityModal = useModal();
-  
-  // Selected item state for activity view
-  const [selectedActivity, setSelectedActivity] = useState<number | null>(null);
+  // Fetch subjects using our custom hook
+  const { beceSubjects, wassceSubjects, isLoading, error } = useSubjects();
+
 
   return (
     <>
@@ -105,7 +55,21 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium text-gray-500">8,245 questions</span>
+                  <span className="text-sm font-medium text-gray-500">
+                    {isLoading ? (
+                      <span className="inline-flex items-center">
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Loading...
+                      </span>
+                    ) : error ? (
+                      "Failed to load"
+                    ) : (
+                      `${beceSubjects.length} subjects`
+                    )}
+                  </span>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
@@ -122,15 +86,42 @@ export default function Home() {
 
             {beceExpanded && (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-6 border-t border-gray-200 dark:border-gray-700">
-                {beceSubjects.map((subject, index) => (
-                  <Link
-                    key={index}
-                    to={`/BECE/${subject.replace(/\s+/g, '-')}`}
-                    className="p-4 rounded-md bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors cursor-pointer"
-                  >
-                    {subject}
-                  </Link>
-                ))}
+                {isLoading ? (
+                  // Loading state
+                  Array(8).fill(0).map((_, index) => (
+                    <div 
+                      key={index} 
+                      className="p-4 rounded-md bg-gray-100 dark:bg-gray-700 animate-pulse h-12"
+                    />
+                  ))
+                ) : error ? (
+                  // Error state
+                  <div className="col-span-full p-4 text-center text-red-500 dark:text-red-400">
+                    <p>Failed to load subjects. Please try again later.</p>
+                    <button 
+                      className="mt-2 px-4 py-2 bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200 rounded-md hover:bg-red-200 dark:hover:bg-red-800 transition-colors"
+                      onClick={() => window.location.reload()}
+                    >
+                      Retry
+                    </button>
+                  </div>
+                ) : beceSubjects.length === 0 ? (
+                  // No data state
+                  <div className="col-span-full p-4 text-center text-gray-500 dark:text-gray-400">
+                    No subjects available
+                  </div>
+                ) : (
+                  // Subjects list
+                  beceSubjects.map((subject, index) => (
+                    <Link
+                      key={index}
+                      to={`/BECE/${subject.replace(/\s+/g, '-')}`}
+                      className="p-4 rounded-md bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors cursor-pointer"
+                    >
+                      {subject}
+                    </Link>
+                  ))
+                )}
               </div>
             )}
           </div>
@@ -158,7 +149,21 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium text-gray-500">7,097 questions</span>
+                  <span className="text-sm font-medium text-gray-500">
+                    {isLoading ? (
+                      <span className="inline-flex items-center">
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Loading...
+                      </span>
+                    ) : error ? (
+                      "Failed to load"
+                    ) : (
+                      `${wassceSubjects.length} subjects`
+                    )}
+                  </span>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
@@ -175,15 +180,42 @@ export default function Home() {
 
             {wassceExpanded && (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-6 border-t border-gray-200 dark:border-gray-700">
-                {wassceSubjects.map((subject, index) => (
-                  <Link
-                    key={index}
-                    to={`/WASSCE/${subject.replace(/\s+/g, '-')}`}
-                    className="p-4 rounded-md bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors cursor-pointer"
-                  >
-                    {subject}
-                  </Link>
-                ))}
+                {isLoading ? (
+                  // Loading state
+                  Array(8).fill(0).map((_, index) => (
+                    <div 
+                      key={index} 
+                      className="p-4 rounded-md bg-gray-100 dark:bg-gray-700 animate-pulse h-12"
+                    />
+                  ))
+                ) : error ? (
+                  // Error state
+                  <div className="col-span-full p-4 text-center text-red-500 dark:text-red-400">
+                    <p>Failed to load subjects. Please try again later.</p>
+                    <button 
+                      className="mt-2 px-4 py-2 bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200 rounded-md hover:bg-red-200 dark:hover:bg-red-800 transition-colors"
+                      onClick={() => window.location.reload()}
+                    >
+                      Retry
+                    </button>
+                  </div>
+                ) : wassceSubjects.length === 0 ? (
+                  // No data state
+                  <div className="col-span-full p-4 text-center text-gray-500 dark:text-gray-400">
+                    No subjects available
+                  </div>
+                ) : (
+                  // Subjects list
+                  wassceSubjects.map((subject, index) => (
+                    <Link
+                      key={index}
+                      to={`/WASSCE/${subject.replace(/\s+/g, '-')}`}
+                      className="p-4 rounded-md bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors cursor-pointer"
+                    >
+                      {subject}
+                    </Link>
+                  ))
+                )}
               </div>
             )}
           </div>
@@ -213,7 +245,7 @@ export default function Home() {
               </svg>
               <span className="text-gray-900 dark:text-white font-medium">Exam Types</span>
             </Link>
-            <button 
+            <button
               onClick={() => alert("Import Questions feature is coming soon. This route needs to be implemented.")}
               className="flex items-center justify-center px-4 py-6 bg-white dark:bg-gray-800 shadow rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
             >
@@ -224,203 +256,7 @@ export default function Home() {
             </button>
           </div>
         </div>
-
-        {/* Recent Activity */}
-        <div className="mt-8">
-          <h2 className="text-lg font-medium text-gray-900 dark:text-white">Recent Activity</h2>
-          <div className="mt-3 overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
-            <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-              {recentActivity.map((item, index) => (
-                <li key={index} className="px-6 py-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="mr-4">
-                        <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
-                          <span className="text-xs font-medium leading-none text-gray-700 dark:text-gray-200">{item.user.charAt(0)}</span>
-                        </span>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          {item.action}
-                          <span className="font-bold"> • </span>
-                          <span className="text-gray-500">{item.subject} ({item.examType})</span>
-                        </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {item.user} • {item.time}
-                        </p>
-                      </div>
-                    </div>
-                    <div>
-                      <button 
-                        className="text-sm font-medium text-blue-600 hover:text-blue-500"
-                        onClick={() => {
-                          setSelectedActivity(index);
-                          activityModal.openModal();
-                        }}
-                      >
-                        View
-                      </button>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-            <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 text-center">
-              <button 
-                className="text-sm font-medium text-blue-600 hover:text-blue-500"
-                onClick={activityModal.openModal}
-              >
-                View all activity
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
-      
-      {/* Metrics-related modals removed */}
-      
-      {/* Activity Detail Modal */}
-      <Modal isOpen={activityModal.isOpen} onClose={activityModal.closeModal} className="w-full max-w-2xl mx-auto">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Activity Detail</h2>
-            <button 
-              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              onClick={activityModal.closeModal}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-          
-          {selectedActivity !== null && (
-            <div>
-              <div className="mb-6">
-                <div className="flex items-center mb-4">
-                  <div className="mr-4">
-                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
-                      <span className="text-lg font-medium leading-none text-gray-700 dark:text-gray-200">
-                        {recentActivity[selectedActivity].user.charAt(0)}
-                      </span>
-                    </span>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">{recentActivity[selectedActivity].user}</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{recentActivity[selectedActivity].time}</p>
-                  </div>
-                </div>
-                
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
-                  <h4 className="font-medium text-gray-900 dark:text-white">
-                    {recentActivity[selectedActivity].action}
-                  </h4>
-                  <div className="mt-2">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      <span className="font-medium">Subject:</span> {recentActivity[selectedActivity].subject}
-                    </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      <span className="font-medium">Exam Type:</span> {recentActivity[selectedActivity].examType}
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="mt-6">
-                  <h4 className="text-md font-medium text-gray-900 dark:text-white mb-3">Additional Details</h4>
-                  <div className="space-y-2">
-                    {recentActivity[selectedActivity].action === "Created new question" && (
-                      <div className="p-3 border border-gray-200 dark:border-gray-600 rounded-md">
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
-                          <span className="font-medium">Question Text:</span> Calculate the area of a circle with radius 5cm.
-                        </p>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                          <span className="font-medium">Question Type:</span> Multiple Choice
-                        </p>
-                      </div>
-                    )}
-                    
-                    {recentActivity[selectedActivity].action === "Updated question bank" && (
-                      <div className="p-3 border border-gray-200 dark:border-gray-600 rounded-md">
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
-                          <span className="font-medium">Questions Added:</span> 15
-                        </p>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                          <span className="font-medium">Bank:</span> WASSCE Physics Test Bank
-                        </p>
-                      </div>
-                    )}
-                    
-                    {recentActivity[selectedActivity].action === "Imported question set" && (
-                      <div className="p-3 border border-gray-200 dark:border-gray-600 rounded-md">
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
-                          <span className="font-medium">Set Name:</span> BECE English Language 2023
-                        </p>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                          <span className="font-medium">Questions:</span> 60
-                        </p>
-                      </div>
-                    )}
-                    
-                    {recentActivity[selectedActivity].action === "Approved questions" && (
-                      <div className="p-3 border border-gray-200 dark:border-gray-600 rounded-md">
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
-                          <span className="font-medium">Questions Approved:</span> 25
-                        </p>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                          <span className="font-medium">Set:</span> WASSCE Chemistry Prep
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex justify-end space-x-3">
-                <button 
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-                  onClick={activityModal.closeModal}
-                >
-                  Close
-                </button>
-                <button 
-                  className="px-4 py-2 bg-blue-600 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-blue-700"
-                >
-                  View Related Items
-                </button>
-              </div>
-            </div>
-          )}
-          
-          {selectedActivity === null && (
-            <div className="space-y-4 mb-6">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">All Recent Activity</h3>
-              <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                {recentActivity.map((item, index) => (
-                  <div key={index} className="py-4">
-                    <div className="flex items-center">
-                      <div className="mr-4">
-                        <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
-                          <span className="text-xs font-medium leading-none text-gray-700 dark:text-gray-200">{item.user.charAt(0)}</span>
-                        </span>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          {item.action}
-                          <span className="font-bold"> • </span>
-                          <span className="text-gray-500">{item.subject} ({item.examType})</span>
-                        </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {item.user} • {item.time}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </Modal>
     </>
   );
 }

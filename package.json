@@ -6,9 +6,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b --noEmit && vite build",
+    "build:production": "tsc -b --noEmit && NODE_ENV=production vite build",
+    "build:force": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "lint:fix": "eslint . --fix",
+    "preview": "vite preview",
+    "clean": "rimraf dist",
+    "prebuild": "npm run clean"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.15",
@@ -47,6 +52,7 @@
     "eslint-plugin-react-refresh": "^0.4.18",
     "globals": "^15.14.0",
     "postcss": "^8.5.2",
+    "rimraf": "^5.0.0",
     "tailwindcss": "^4.0.8",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.22.0",

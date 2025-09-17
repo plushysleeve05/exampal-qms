@@ -7,10 +7,19 @@ import ExamTypes from "./pages/ExamTypes";
 import ExamSections from "./pages/ExamSections";
 import ExamYears from "./pages/ExamYears";
 import QuestionTypes from "./pages/QuestionTypes";
-import SubjectPage from "./pages/SubjectPage";
 import SubjectQuestionsPage from "./pages/SubjectQuestionsPage";
+import SubjectsListPage from "./pages/SubjectsListPage";
 import QuestionForm from "./pages/QuestionForm";
-import ApiTestPage from "./api/ApiTestPage";
+
+// User Management Pages
+import UsersList from "./pages/UserManagement/UsersList";
+import UserRoles from "./pages/UserManagement/UserRoles";
+import UserActivity from "./pages/UserManagement/UserActivity";
+
+// Statistics Pages
+import Dashboard from "./pages/Statistics/Dashboard";
+import Analytics from "./pages/Statistics/Analytics";
+import Reports from "./pages/Statistics/Reports";
 
 export default function App() {
   return (
@@ -27,12 +36,22 @@ export default function App() {
             <Route path="/exam-sections" element={<ExamSections />} />
             <Route path="/exam-years" element={<ExamYears />} />
             <Route path="/question-types" element={<QuestionTypes />} />
-            <Route path="/api-test" element={<ApiTestPage />} />
+            <Route path="/subjects" element={<SubjectsListPage />} />
             
             {/* Subject and Question Routes */}
-            <Route path="/:examType/:subject" element={<SubjectPage />} />
+            <Route path="/:examType/:subject" element={<SubjectQuestionsPage />} />
             <Route path="/:examType/:subject/questions" element={<SubjectQuestionsPage />} />
             <Route path="/:examType/:subject/questions/add/:section" element={<QuestionForm />} />
+            
+            {/* User Management Routes */}
+            <Route path="/user-management/users" element={<UsersList />} />
+            <Route path="/user-management/roles" element={<UserRoles />} />
+            <Route path="/user-management/activity" element={<UserActivity />} />
+            
+            {/* Statistics Routes */}
+            <Route path="/statistics/dashboard" element={<Dashboard />} />
+            <Route path="/statistics/analytics" element={<Analytics />} />
+            <Route path="/statistics/reports" element={<Reports />} />
           </Route>
 
           {/* Fallback Route */}

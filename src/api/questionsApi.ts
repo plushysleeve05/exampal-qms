@@ -116,9 +116,9 @@ export const fetchFilteredQuestions = async (params: QuestionFilterParams): Prom
     const token = localStorage.getItem('auth_token');
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     
-    // Use the direct URL instead of the API instance's baseURL
+    // Use the same base URL as the main API
     const response = await axios.get<QuestionsResponse>(
-      `https://trbc396b-8082.uks1.devtunnels.ms/api/v1/questions/filtered?${queryParams.toString()}`,
+      `https://api.exampalgh.com/api/v1/questions/filtered?${queryParams.toString()}`,
       { headers }
     );
     
@@ -142,7 +142,7 @@ export const fetchQuestionById = async (id: number): Promise<Question> => {
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     
     const response = await axios.get<Question>(
-      `https://trbc396b-8082.uks1.devtunnels.ms/api/v1/questions/${id}`,
+      `https://api.exampalgh.com/api/v1/questions/${id}`,
       { headers }
     );
     return response.data;
@@ -213,7 +213,7 @@ export const updateQuestion = async (id: number, questionData: UpdateQuestionPay
     
     // Update URL to use the production API endpoint
     const response = await axios.put<Question>(
-      `https://trbc396b-8082.uks1.devtunnels.ms/api/v1/questions/${id}`,
+      `https://api.exampalgh.com/api/v1/questions/${id}`,
       payload,
       { headers }
     );

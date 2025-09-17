@@ -19,6 +19,17 @@ interface QuestionsTableProps {
   initialDataLoaded?: boolean;
 }
 
+// Helper function to check if a question has solution materials
+const hasSolutionMaterials = (question: QuestionData): boolean => {
+  return !!(
+    question.solutions && 
+    (question.solutions.videoUrl || 
+     question.solutions.imagePreview || 
+     question.solutions.markingSchemePreview || 
+     question.solutions.teachersNotePreview)
+  );
+};
+
 const QuestionsTable: React.FC<QuestionsTableProps> = ({
   paginatedQuestions,
   sortConfig,
@@ -300,8 +311,15 @@ const QuestionsTable: React.FC<QuestionsTableProps> = ({
                   className={`transition-colors duration-150 group cursor-pointer ${
                     selectedRows.includes(question.id)
                       ? 'bg-blue-50/50 dark:bg-blue-900/10'
-                      : 'hover:bg-gray-50 dark:hover:bg-gray-700/70'
+                      : hasSolutionMaterials(question)
+                        ? 'bg-green-50/50 dark:bg-green-900/10 hover:bg-green-100/50 dark:hover:bg-green-800/30'
+                        : 'hover:bg-gray-50 dark:hover:bg-gray-700/70'
                   }`}
+                  title={
+                    hasSolutionMaterials(question)
+                      ? "This question has solution materials"
+                      : ""
+                  }
                   tabIndex={0}
                   role="row"
                   aria-selected={selectedRows.includes(question.id)}
@@ -360,8 +378,18 @@ const QuestionsTable: React.FC<QuestionsTableProps> = ({
                           ? 'bg-blue-400 dark:bg-blue-500'
                           : 'bg-green-400 dark:bg-green-500'
                       }`}></span>
-                      <div className="text-sm text-gray-700 dark:text-gray-300">
+                      <div className="text-sm text-gray-700 dark:text-gray-300 flex items-center">
                         {question.section}
+                        {hasSolutionMaterials(question) && (
+                          <span 
+                            className="ml-2 text-green-600 dark:text-green-400 flex items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30" 
+                            title="This question has solution materials"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </span>
+                        )}
                       </div>
                     </div>
                   </td>

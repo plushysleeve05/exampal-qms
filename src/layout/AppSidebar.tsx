@@ -10,6 +10,10 @@ import {
   ListIcon,
   PageIcon,
   TableIcon,
+  UserCircleIcon,
+  PieChartIcon,
+  GroupIcon,
+  ChatIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
@@ -48,14 +52,33 @@ const navItems: NavItem[] = [
     path: "/question-types",
   },
   {
-    icon: <HorizontaLDots />,
-    name: "API Test",
-    path: "/api-test",
+    icon: <PageIcon />,
+    name: "Subjects",
+    path: "/subjects",
   },
 ];
 
-// Empty other items as they are not needed for ExamPal QMS
-const othersItems: NavItem[] = [];
+// Other items for User Management and Statistics
+const othersItems: NavItem[] = [
+  {
+    icon: <UserCircleIcon />,
+    name: "User Management",
+    subItems: [
+      { name: "Users List", path: "/user-management/users" },
+      { name: "User Roles", path: "/user-management/roles" },
+      { name: "User Activity", path: "/user-management/activity" },
+    ],
+  },
+  {
+    icon: <PieChartIcon />,
+    name: "Statistics",
+    subItems: [
+      { name: "Dashboard", path: "/statistics/dashboard" },
+      { name: "Analytics", path: "/statistics/analytics" },
+      { name: "Reports", path: "/statistics/reports" },
+    ],
+  },
+];
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();

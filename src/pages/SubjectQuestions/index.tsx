@@ -8,10 +8,11 @@ import ViewQuestionModal from '../../components/common/ViewQuestionModal';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
 import { ExamType } from '../../api/types';
 import { QuestionFilterParams } from '../../api/questionsApi';
+import { normalizeSubjectName } from '../../utils/subjectUtils';
 
 import { useQuestionsApi } from './hooks/useQuestionsApi';
 import { useQuestionFilters } from './hooks/useQuestionFilters';
-import { usePagination } from './hooks/usePagination';
+import { usePagination, PaginationData } from './hooks/usePagination';
 import { useNotification } from './hooks/useNotification';
 import { QuestionData, ConfirmationModalProps } from './types';
 
@@ -24,7 +25,8 @@ import SubjectSelector from './components/SubjectSelector';
 export default function SubjectQuestions() {
   // Get URL parameters
   const { examType, subject } = useParams<{ examType: string; subject: string }>();
-  const initialFormattedSubject = subject?.replace(/-/g, ' ');
+  // Normalize the subject name to ensure consistent capitalization
+  const initialFormattedSubject = normalizeSubjectName(subject || '');
 
   // Basic state
   const [currentSubject, setCurrentSubject] = useState<string>(initialFormattedSubject || "");
@@ -53,7 +55,6 @@ export default function SubjectQuestions() {
     setSelectedRows([]);
     setAllQuestions([]);
     setPaginatedQuestions([]);
-    setTotalItems(0);
   };
 
   const endFetchUI = () => setIsLoading(false);
@@ -98,19 +99,29 @@ export default function SubjectQuestions() {
     allQuestions
   });
 
+  /**
+   * Pagination hook for managing server-side pagination
+   * 
+   * This provides:
+   * - pagination state (current page, page size, total items, total pages)
+   * - methods to update pagination (setPage, setPageSize)
+   * - method to update from backend response
+   * - calculated values for display (indexOfFirstItem, indexOfLastItem)
+   * - navigation helpers (hasNext, hasPrev)
+   * - resetPagination method
+   */
   const {
-    currentPage,
-    setCurrentPage,
-    itemsPerPage,
-    setItemsPerPage,
-    totalPages,
-    setTotalPages,
-    totalItems,
-    setTotalItems,
-    paginate,
-    updatePaginationFromBackend
+    pagination,
+    setPage,
+    setPageSize,
+    updateFromBackend,
+    resetPagination,
+    indexOfFirstItem,
+    indexOfLastItem,
+    hasNext,
+    hasPrev
   } = usePagination({
-    initialItemsPerPage: 10
+    initialPageSize: 10
   });
 
   const {
@@ -169,14 +180,13 @@ export default function SubjectQuestions() {
       return;
     }
 
-
     startFetchUIReset(); // << clear immediately
 
     try {
       // Build filter parameters for API call
       const filterParams: QuestionFilterParams = {
         examtype: examType as ExamType,
-        subject: currentSubject,
+        subject: normalizeSubjectName(currentSubject),
       };
 
       // Add optional filters
@@ -212,18 +222,25 @@ export default function SubjectQuestions() {
         filterParams.questionType = pendingQuestionType;
       }
 
-      // Fetch questions from API
-      // Using 0-indexed pagination (page 0 is the first page)
-      const response = await fetchQuestions(filterParams, currentPage, itemsPerPage);
+      // Reset pagination state when applying new filters
+      resetPagination();
+      
+      // Always start from first page (0-indexed)
+      const pageNumber = 0;
+
+      // Fetch questions from API with proper pagination
+      const response = await fetchQuestions(filterParams, pageNumber, pagination.pageSize);
 
       // Apply filters to questions
       applyFiltersFn();
 
-      // Set questions and update pagination data
+      // Set questions and update UI
       setAllQuestions(response.questions);
       setPaginatedQuestions(response.questions);
-      updatePaginationFromBackend(response.pagination);
-
+      
+      // Update pagination data from backend response
+      updateFromBackend(response.pagination);
+      
       // Set initialDataLoaded to true
       setInitialDataLoaded(true);
     } catch (error) {
@@ -241,26 +258,33 @@ export default function SubjectQuestions() {
       return;
     }
 
-    setIsLoading(true);
+    startFetchUIReset();
 
     try {
       // Create minimal filter params (just exam type and subject)
       const filterParams: QuestionFilterParams = {
         examtype: examType as ExamType,
-        subject: currentSubject
+        subject: normalizeSubjectName(currentSubject)
       };
 
       // Reset all filters
       resetFilters();
+      
+      // Reset pagination state completely
+      resetPagination();
+      
+      // Always start from page 0 when loading all data
+      const pageNumber = 0;
 
-      // Fetch questions from API
-      // Using 0-indexed pagination (page 0 is the first page)
-      const response = await fetchQuestions(filterParams, 0, itemsPerPage);
+      // Fetch questions from API with proper pagination
+      const response = await fetchQuestions(filterParams, pageNumber, pagination.pageSize);
 
-      // Set questions and update pagination data
+      // Update UI with the fetched data
       setAllQuestions(response.questions);
       setPaginatedQuestions(response.questions);
-      updatePaginationFromBackend(response.pagination);
+      
+      // Update pagination data from the backend response
+      updateFromBackend(response.pagination);
 
       // Set initialDataLoaded to true
       setInitialDataLoaded(true);
@@ -291,9 +315,7 @@ export default function SubjectQuestions() {
     }
   };
 
-  // Calculate pagination values based on current page and items per page
-  const indexOfLastItem = (currentPage + 1) * itemsPerPage;
-  const indexOfFirstItem = currentPage * itemsPerPage + 1;
+  // indexOfFirstItem and indexOfLastItem are provided by the usePagination hook
 
   // Function to fetch data for a specific page
   const fetchPageData = useCallback(async (pageNumber: number) => {
@@ -344,19 +366,48 @@ export default function SubjectQuestions() {
         filterParams.questionType = selectedQuestionType;
       }
 
+      // Update pagination state
+      setPage(pageNumber);
+
       // Fetch questions from API for the requested page
-      const response = await fetchQuestions(filterParams, pageNumber, itemsPerPage);
+      console.log('Fetching page data:', { 
+        filterParams, 
+        pageNumber, 
+        pageSize: pagination.pageSize 
+      });
+      const response = await fetchQuestions(filterParams, pageNumber, pagination.pageSize);
+      console.log('API Response:', response);
 
       // Update state with new data
       setPaginatedQuestions(response.questions);
-      updatePaginationFromBackend(response.pagination);
+      
+      // Handle the pagination data from the response
+      // If we get a full page of results, we'll assume there are more pages
+      const enhancedPagination = {
+        ...response.pagination,
+        // Current page should match what we requested
+        currentPage: pageNumber,
+        // Always set totalItems to at least match what we received
+        totalItems: Math.max(response.pagination.totalItems || 0, response.questions.length),
+        // If we got a full page of items, assume there's at least one more page
+        totalPages: response.pagination.totalPages > 0 ? response.pagination.totalPages :
+                   (response.questions.length >= pagination.pageSize ? pageNumber + 2 : pageNumber + 1)
+      };
+      
+      // Update the pagination state with our enhanced data
+      updateFromBackend(enhancedPagination);
+      
+      // Mark data as loaded
+      if (!initialDataLoaded) {
+        setInitialDataLoaded(true);
+      }
     } catch (error) {
       console.error("Error fetching page data:", error);
       showNotification("Failed to fetch questions for this page. Please try again.", "error");
     } finally {
       setIsLoading(false);
     }
-  }, [examType, currentSubject, selectedYears, selectedSections, selectedTopics, selectedDifficulties, selectedQuestionType, itemsPerPage, fetchQuestions]);
+  }, [examType, currentSubject, selectedYears, selectedSections, selectedTopics, selectedDifficulties, selectedQuestionType, pagination.pageSize, fetchQuestions, setPage]);
 
   // Handle sort
   const handleSort = (key: keyof QuestionData) => {
@@ -631,11 +682,11 @@ export default function SubjectQuestions() {
       try {
         // Check if filters are applied
         if (selectedYears.length > 0 || selectedSections.length > 0 ||
-          selectedTopics.length > 0 || selectedDifficulties.length > 0) {
+          selectedTopics.length > 0 || selectedDifficulties.length > 0 || selectedQuestionType) {
           // If filters are applied, use them to fetch
           const filterParams: QuestionFilterParams = {
             examtype: examType as ExamType,
-            subject: currentSubject,
+            subject: normalizeSubjectName(currentSubject),
           };
 
           if (selectedYears.length > 0) {
@@ -663,25 +714,53 @@ export default function SubjectQuestions() {
             );
           }
 
-          console.log("Refetching questions with filters:", filterParams);
-          const response = await fetchQuestions(filterParams, currentPage, itemsPerPage);
+          // Add question type filter if selected
+          if (selectedQuestionType) {
+            filterParams.questionType = selectedQuestionType;
+          }
+
+          const response = await fetchQuestions(filterParams, pagination.currentPage, pagination.pageSize);
 
           // Update state with fresh data
           setAllQuestions(response.questions);
           setPaginatedQuestions(response.questions);
-          updatePaginationFromBackend(response.pagination);
+          updateFromBackend(response.pagination);
+          
+          // Re-apply client-side filters if necessary
+          if (searchQuery) {
+            const query = searchQuery.toLowerCase().trim();
+            const searchResults = response.questions.filter(question => {
+              return question.topic?.toLowerCase().includes(query) ||
+                question.section?.toLowerCase().includes(query) ||
+                question.questionType?.toLowerCase().includes(query) ||
+                question.questionNumber?.toString().includes(query) ||
+                question.difficulty?.toLowerCase().includes(query);
+            });
+            setPaginatedQuestions(searchResults);
+          }
         } else {
           // If no filters are applied, fetch all questions
-          console.log("Refetching all questions");
           await loadAllData();
         }
       } catch (refetchError) {
-        console.error("Error refetching questions after update:", refetchError);
         // Fall back to local update if refetch fails
         const updatedQuestions = allQuestions.map((q) =>
           q.id === finalEditedQuestion.id ? finalEditedQuestion : q
         );
         setAllQuestions(updatedQuestions);
+        
+        // Apply existing filters to the updated questions
+        const filteredQuestions = updatedQuestions.filter(question => {
+          const yearMatch = selectedYears.length === 0 || selectedYears.includes(question.year);
+          const sectionMatch = selectedSections.length === 0 || selectedSections.includes(question.section);
+          const topicMatch = selectedTopics.length === 0 || selectedTopics.includes(question.topic);
+          const difficultyMatch = selectedDifficulties.length === 0 || selectedDifficulties.includes(question.difficulty);
+          const questionTypeMatch = !selectedQuestionType || question.questionType.includes(selectedQuestionType);
+          
+          return yearMatch && sectionMatch && topicMatch && difficultyMatch && questionTypeMatch;
+        });
+        
+        setPaginatedQuestions(filteredQuestions);
       }
 
       setIsEditModalOpen(false);
@@ -720,8 +799,11 @@ export default function SubjectQuestions() {
 
   // Function to handle changing subjects
   const handleSubjectChange = async (newSubject: string) => {
+    // Normalize the subject name to ensure consistent capitalization
+    const normalizedSubject = normalizeSubjectName(newSubject);
+    
     // Update the current subject and set loading state
-    setCurrentSubject(newSubject);
+    setCurrentSubject(normalizedSubject);
     
     // Call startFetchUIReset to properly clear all data
     startFetchUIReset();
@@ -737,7 +819,7 @@ export default function SubjectQuestions() {
 
       // Reset all filters
       resetFilters();
-      setCurrentPage(0);
+      setPage(0);
 
       // Reset initialDataLoaded flag to show the initial message
       setInitialDataLoaded(false);
@@ -1022,21 +1104,32 @@ export default function SubjectQuestions() {
 
             {/* Pagination Component */}
             {initialDataLoaded && !isLoading && (
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                paginate={(pageNumber) => {
-                  fetchPageData(pageNumber);
-                }}
-                itemsPerPage={itemsPerPage}
-                setItemsPerPage={(newItemsPerPage) => {
-                  setItemsPerPage(newItemsPerPage);
-                  fetchPageData(0); // Reset to first page when changing items per page
-                }}
-                totalItems={totalItems}
-                indexOfFirstItem={indexOfFirstItem}
-                indexOfLastItem={Math.min(indexOfLastItem, totalItems)}
-              />
+              <>
+                {/* Pagination Status - Subtle Indicator */}
+                <div className="text-center px-4 py-2 mb-4">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {paginatedQuestions.length > 0 ? 
+                      `Showing page ${pagination.currentPage + 1}` : 
+                      'No results found'}
+                  </span>
+                </div>
+                <Pagination
+                  pagination={pagination}
+                  onPageChange={(pageNumber) => {
+                    console.log('Changing to page:', pageNumber);
+                    fetchPageData(pageNumber);
+                  }}
+                  onPageSizeChange={(newPageSize) => {
+                    console.log('Changing page size to:', newPageSize);
+                    setPageSize(newPageSize);
+                    fetchPageData(0); // Reset to first page when changing page size
+                  }}
+                  indexOfFirstItem={indexOfFirstItem}
+                  indexOfLastItem={Math.min(indexOfLastItem, pagination.totalItems || paginatedQuestions.length)}
+                  hasNext={hasNext || (paginatedQuestions.length === pagination.pageSize)}
+                  hasPrev={hasPrev}
+                />
+              </>
             )}
 
             {/* Empty State */}
